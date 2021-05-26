@@ -189,18 +189,18 @@ contract MultiRewards is IRewardsContract, ReentrancyGuard, TemporarilyPausable,
             if (reward > 0) {
                 rewards[msg.sender][_rewardsToken] = 0;
 
-                ops[i] = IVault.UserBalanceOp({
-                    asset: IAsset(_rewardsToken),
-                    amount: reward,
-                    sender: address(this),
-                    recipient: msg.sender,
-                    kind: IVault.UserBalanceOpKind.DEPOSIT_INTERNAL
-                });
-
                 emit RewardPaid(msg.sender, _rewardsToken, reward);
             }
-            vault.manageUserBalance(ops);
+
+            ops[i] = IVault.UserBalanceOp({
+                asset: IAsset(_rewardsToken),
+                amount: reward,
+                sender: address(this),
+                recipient: msg.sender,
+                kind: IVault.UserBalanceOpKind.DEPOSIT_INTERNAL
+            });
         }
+        vault.manageUserBalance(ops);
     }
 
     function exit() external {
