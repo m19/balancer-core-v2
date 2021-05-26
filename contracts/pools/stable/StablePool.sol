@@ -114,7 +114,7 @@ contract StablePool is BaseGeneralPool, StableMath {
 
     //Admin functions
 
-    function startAmplificationParamaterUpdate(uint256 targetValue, uint256 targetBlock) external authenticate {
+    function startAmplificationParameterUpdate(uint256 targetValue, uint256 targetBlock) external authenticate {
         require(targetValue >= _MIN_AMP, "MIN_AMP");
         require(targetValue <= _MAX_AMP, "MAX_AMP");
 
