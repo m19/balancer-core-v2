@@ -59,7 +59,7 @@ describe('MerkleRedeem', () => {
     expect(result).to.equal(true);
   });
 
-  it('Emits RewardAdded when an allocation is stored', async () => {
+  it('emits RewardAdded when an allocation is stored', async () => {
     const claimBalance = bn('9876');
 
     const elements = [encodeElement(lp1.address, claimBalance)];
@@ -72,6 +72,20 @@ describe('MerkleRedeem', () => {
       token: rewardToken.address,
       amount: claimBalance,
     });
+  });
+
+  it('requisitions tokens when it stores a balance', async () => {
+    const claimBalance = bn('9876');
+
+    const elements = [encodeElement(lp1.address, claimBalance)];
+    const merkleTree = new MerkleTree(elements);
+    const root = merkleTree.getHexRoot();
+
+    await expectBalanceChange(
+      () => merkleRedeem.connect(admin).seedAllocations(bn(1), root, claimBalance),
+      rewardTokens,
+      [{ account: admin, changes: { DAI: -claimBalance } }]
+    );
   });
 
   it('stores multiple allocations', async () => {
@@ -106,7 +120,7 @@ describe('MerkleRedeem', () => {
       await merkleRedeem.connect(admin).seedAllocations(1, root, claimableBalance);
     });
 
-    it('Allows the user to claimWeek', async () => {
+    it('allows the user to claimWeek', async () => {
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
 
       await expectBalanceChange(
@@ -116,7 +130,7 @@ describe('MerkleRedeem', () => {
       );
     });
 
-    it('Emits RewardPaid when an allocation is claimed', async () => {
+    it('emits RewardPaid when an allocation is claimed', async () => {
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
 
       const receipt = await (
@@ -130,7 +144,7 @@ describe('MerkleRedeem', () => {
       });
     });
 
-    it('Marks claimed weeks as claimed', async () => {
+    it('marks claimed weeks as claimed', async () => {
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
       await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimableBalance, merkleProof, false);
 
@@ -138,7 +152,7 @@ describe('MerkleRedeem', () => {
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
     });
 
-    it('Allows the user to claimWeek to internal balance', async () => {
+    it('allows the user to claimWeek to internal balance', async () => {
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
 
       await expectBalanceChange(
@@ -152,7 +166,7 @@ describe('MerkleRedeem', () => {
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
     });
 
-    it('Reverts when a user attempts to claim for another user', async () => {
+    it('reverts when a user attempts to claim for another user', async () => {
       const merkleProof = merkleTree.getHexProof(elements[0]);
 
       const errorMsg = 'Incorrect merkle proof';
@@ -161,7 +175,7 @@ describe('MerkleRedeem', () => {
       ).to.be.revertedWith(errorMsg);
     });
 
-    it('Reverts when the user attempts to claim the wrong balance', async () => {
+    it('reverts when the user attempts to claim the wrong balance', async () => {
       const incorrectClaimedBalance = bn('666');
       const merkleProof = merkleTree.getHexProof(elements[0]);
       const errorMsg = 'Incorrect merkle proof';
@@ -170,7 +184,7 @@ describe('MerkleRedeem', () => {
       ).to.be.revertedWith(errorMsg);
     });
 
-    it('Reverts when the user attempts to claim twice', async () => {
+    it('reverts when the user attempts to claim twice', async () => {
       const merkleProof = merkleTree.getHexProof(elements[0]);
 
       await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimableBalance, merkleProof, false);
@@ -181,7 +195,7 @@ describe('MerkleRedeem', () => {
       ).to.be.revertedWith(errorMsg);
     });
 
-    it('Reverts when an admin attempts to overwrite an allocationn', async () => {
+    it('reverts when an admin attempts to overwrite an allocationn', async () => {
       const elements2 = [encodeElement(lp1.address, claimableBalance), encodeElement(lp2.address, claimableBalance)];
       const merkleTree2 = new MerkleTree(elements2);
       const root2 = merkleTree2.getHexRoot();
@@ -193,7 +207,7 @@ describe('MerkleRedeem', () => {
     });
   });
 
-  describe('With several allocations', () => {
+  describe('with several allocations', () => {
     const claimBalance1 = bn('1000');
     const claimBalance2 = bn('1234');
 
@@ -219,7 +233,7 @@ describe('MerkleRedeem', () => {
       await merkleRedeem.connect(admin).seedAllocations(bn(2), root2, claimBalance2);
     });
 
-    it('Allows the user to claim multiple weeks at once', async () => {
+    it('allows the user to claim multiple weeks at once', async () => {
       const claimedBalance1 = bn('1000');
       const claimedBalance2 = bn('1234');
 
@@ -236,13 +250,13 @@ describe('MerkleRedeem', () => {
       ]);
     });
 
-    it('Reports weeks as unclaimed', async () => {
+    it('reports weeks as unclaimed', async () => {
       const expectedResult = [false, false];
       const result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
       expect(result).to.eql(expectedResult);
     });
 
-    it('Returns an array of merkle roots', async () => {
+    it('returns an array of merkle roots', async () => {
       const expectedResult = [root1, root2];
       const result = await merkleRedeem.merkleRoots(1, 2);
       expect(result).to.eql(expectedResult); // "claim status should be accurate"
@@ -258,7 +272,7 @@ describe('MerkleRedeem', () => {
         await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
       });
 
-      it('Reports one of the weeks as claimed', async () => {
+      it('reports one of the weeks as claimed', async () => {
         const expectedResult = [true, false];
         const result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
         expect(result).to.eql(expectedResult);

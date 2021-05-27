@@ -179,7 +179,7 @@ describe('Staking contract', () => {
       );
     });
 
-    it('Emits RewardAdded when an allocation is stored', async () => {
+    it('emits RewardAdded when an allocation is stored', async () => {
       const receipt = await (
         await stakingContract.connect(mockAssetManager).notifyRewardAmount(rewardToken.address, rewardAmount)
       ).wait();
@@ -232,7 +232,7 @@ describe('Staking contract', () => {
       );
     });
 
-    it('Emits RewardPaid when an allocation is claimed', async () => {
+    it('emits RewardPaid when an allocation is claimed', async () => {
       await stakingContract.connect(mockAssetManager).notifyRewardAmount(rewardToken.address, rewardAmount);
       await advanceTime(10);
 
