@@ -148,10 +148,18 @@ describe('MerkleRedeem', () => {
     it('Allows the user to claimWeek', async () => {
       const claimedBalance = bn('1000');
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
-      await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false);
 
-      const result = await rewardToken.balanceOf(lp1.address);
-      expect(result).to.equal(claimedBalance); //"user should have an allocation";
+      await expectBalanceChange(
+        () => merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false),
+        rewardTokens,
+        [{ account: lp1, changes: { DAI: claimedBalance } }]
+      );
+    });
+
+    it('Marks claimed weeks as claimed', async () => {
+      const claimedBalance = bn('1000');
+      const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
+      await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false);
 
       const isClaimed = await merkleRedeem.claimed(1, lp1.address);
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
@@ -172,7 +180,7 @@ describe('MerkleRedeem', () => {
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
     });
 
-    it("Doesn't allow a user to claim for another user", async () => {
+    it('Reverts when a user attempts to claim for another user', async () => {
       const claimedBalance = bn('1000');
       const merkleProof = merkleTree.getHexProof(elements[0]);
 
@@ -242,32 +250,38 @@ describe('MerkleRedeem', () => {
         { week: bn(2), balance: claimedBalance2, merkleProof: proof2 },
       ];
 
-      await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
-
-      const result = await rewardToken.balanceOf(lp1.address);
-      expect(result).to.equal(bn('2234')); //"user should receive all tokens, including current week"
+      expectBalanceChange(() => merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false), rewardTokens, [
+        { account: lp1, changes: { DAI: bn('2234') } },
+      ]);
     });
 
-    it('Returns an array of week claims', async () => {
-      let expectedResult = [false, false];
-      let result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
-      expect(result).to.eql(expectedResult); // "claim status should be accurate"
-      const claimedBalance1 = bn('1000');
-      const proof1 = merkleTree1.getHexProof(elements1[0]);
-
-      const merkleProofs = [{ week: bn(1), balance: claimedBalance1, merkleProof: proof1 }];
-
-      await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
-
-      expectedResult = [true, false];
-      result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
-      expect(result).to.eql(expectedResult); // "claim status should be accurate"
+    it('Reports weeks as unclaimed', async () => {
+      const expectedResult = [false, false];
+      const result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
+      expect(result).to.eql(expectedResult);
     });
 
     it('Returns an array of merkle roots', async () => {
       const expectedResult = [root1, root2];
       const result = await merkleRedeem.merkleRoots(1, 2);
       expect(result).to.eql(expectedResult); // "claim status should be accurate"
+    });
+
+    describe('When a user has claimed one of their allocations', async () => {
+      beforeEach(async () => {
+        const claimedBalance1 = bn('1000');
+        const proof1 = merkleTree1.getHexProof(elements1[0]);
+
+        const merkleProofs = [{ week: bn(1), balance: claimedBalance1, merkleProof: proof1 }];
+
+        await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
+      });
+
+      it('Reports one of the weeks as claimed', async () => {
+        const expectedResult = [true, false];
+        const result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
+        expect(result).to.eql(expectedResult);
+      });
     });
   });
 });
