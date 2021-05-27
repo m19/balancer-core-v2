@@ -14,6 +14,7 @@
 
 pragma experimental ABIEncoderV2;
 
+import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/Ownable.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/MerkleProof.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/IERC20.sol";
@@ -27,6 +28,7 @@ import "./interfaces/IDistributor.sol";
 pragma solidity ^0.7.0;
 
 contract MerkleRedeem is IDistributor, Ownable {
+    using FixedPoint for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public rewardToken;
@@ -113,7 +115,7 @@ contract MerkleRedeem is IDistributor, Ownable {
                 "Incorrect merkle proof"
             );
 
-            totalBalance += claim.balance;
+            totalBalance = totalBalance.add(claim.balance);
             claimed[claim.week][_liquidityProvider] = true;
         }
 
