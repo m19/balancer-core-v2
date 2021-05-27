@@ -163,9 +163,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@balancer-labs/v2-distributor-utils@workspace:pkg/distributors":
+"@balancer-labs/v2-distributors@workspace:pkg/distributors":
   version: 0.0.0-use.local
-  resolution: "@balancer-labs/v2-distributor-utils@workspace:pkg/distributors"
+  resolution: "@balancer-labs/v2-distributors@workspace:pkg/distributors"
   dependencies:
     "@balancer-labs/v2-common": "workspace:*"
     "@balancer-labs/v2-helpers": "workspace:*"
