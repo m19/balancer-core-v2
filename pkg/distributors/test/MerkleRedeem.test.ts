@@ -22,12 +22,8 @@ function encodeElement(address: string, balance: BigNumber): string {
 describe('MerkleRedeem', () => {
   let rewardTokens: TokenList, rewardToken: Token, vault: Contract, merkleRedeem: Contract;
 
-  let admin: SignerWithAddress,
-    lp1: SignerWithAddress,
-    lp2: SignerWithAddress,
-    other: SignerWithAddress;
+  let admin: SignerWithAddress, lp1: SignerWithAddress, lp2: SignerWithAddress, other: SignerWithAddress;
   const rewardTokenInitialBalance = bn(100e18);
-  const tokenInitialBalance = bn(200e18);
 
   before('setup', async () => {
     [, admin, lp1, lp2, other] = await ethers.getSigners();
@@ -191,7 +187,9 @@ describe('MerkleRedeem', () => {
       const root2 = merkleTree2.getHexRoot();
 
       const errorMsg = 'cannot rewrite merkle root';
-      expect(merkleRedeem.connect(admin).seedAllocations(1, root2, claimableBalance.mul(2))).to.be.revertedWith(errorMsg);
+      expect(merkleRedeem.connect(admin).seedAllocations(1, root2, claimableBalance.mul(2))).to.be.revertedWith(
+        errorMsg
+      );
     });
   });
 
