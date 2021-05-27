@@ -11,6 +11,7 @@ import { bn, fp } from '@balancer-labs/v2-helpers/src/numbers';
 import { MAX_UINT256 } from '@balancer-labs/v2-helpers/src/constants';
 
 import { deploy } from '@balancer-labs/v2-helpers/src/contract';
+import Vault from '@balancer-labs/v2-helpers/src/models/vault/Vault';
 import { expectBalanceChange } from '@balancer-labs/v2-helpers/src/test/tokenBalance';
 import * as expectEvent from '@balancer-labs/v2-helpers/src/test/expectEvent';
 import { encodeJoinWeightedPool } from '@balancer-labs/v2-helpers/src/models/pools/weighted/encoding';
@@ -26,8 +27,8 @@ const setup = async () => {
   const rewardTokens = await TokenList.create(['DAI'], { sorted: true });
 
   // Deploy Balancer Vault
-  const authorizer = await deploy('v2-vault/Authorizer', { args: [admin.address] });
-  const vault = await deploy('v2-vault/Vault', { args: [authorizer.address, tokens.SNX.address, 0, 0] });
+  const vaultHelper = await Vault.create({ admin });
+  const vault = vaultHelper.instance;
 
   const pool = await deploy('v2-pool-weighted/WeightedPool', {
     args: [vault.address, 'Test Pool', 'TEST', tokens.addresses, [fp(0.5), fp(0.5)], fp(0.0001), 0, 0, admin.address],

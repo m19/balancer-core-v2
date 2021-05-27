@@ -4,6 +4,7 @@ import { expect } from 'chai';
 import { Contract } from 'ethers';
 
 import { deploy } from '@balancer-labs/v2-helpers/src/contract';
+import Vault from '@balancer-labs/v2-helpers/src/models/vault/Vault';
 import { expectBalanceChange } from '@balancer-labs/v2-helpers/src/test/tokenBalance';
 import Token from '@balancer-labs/v2-helpers/src/models/tokens/Token';
 import TokenList from '@balancer-labs/v2-helpers/src/models/tokens/TokenList';
@@ -22,12 +23,7 @@ function encodeElement(address: string, balance: BigNumber): string {
 }
 
 describe('MerkleRedeem', () => {
-  let tokens: TokenList,
-    rewardTokens: TokenList,
-    rewardToken: Token,
-    vault: Contract,
-    authorizer: Contract,
-    merkleRedeem: Contract;
+  let tokens: TokenList, rewardTokens: TokenList, rewardToken: Token, vault: Contract, merkleRedeem: Contract;
 
   let admin: SignerWithAddress,
     lp1: SignerWithAddress,
@@ -38,19 +34,18 @@ describe('MerkleRedeem', () => {
   const rewardTokenInitialBalance = bn(100e18);
   const tokenInitialBalance = bn(200e18);
 
-  before('deploy base contracts', async () => {
+  before('setup', async () => {
     [, admin, lp1, lp2, other, mockAssetManager] = await ethers.getSigners();
   });
 
-  beforeEach('set up tokens and redeem contract', async () => {
+  sharedBeforeEach('deploy vault and tokens', async () => {
+    const vaultHelper = await Vault.create({ admin });
+    vault = vaultHelper.instance;
+
     tokens = await TokenList.create(['SNX', 'MKR'], { sorted: true });
 
     rewardTokens = await TokenList.create(['DAI'], { sorted: true });
     rewardToken = rewardTokens.DAI;
-
-    // Deploy Balancer Vault
-    authorizer = await deploy('v2-vault/Authorizer', { args: [admin.address] });
-    vault = await deploy('v2-vault/Vault', { args: [authorizer.address, tokens.SNX.address, 0, 0] });
 
     merkleRedeem = await deploy('MerkleRedeem', {
       args: [vault.address, rewardToken.address],
