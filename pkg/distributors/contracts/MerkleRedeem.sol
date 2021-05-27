@@ -79,6 +79,7 @@ contract MerkleRedeem is IDistributor, Ownable {
         bytes32[] memory _merkleProof,
         bool internalBalance
     ) public {
+        require(msg.sender == _liquidityProvider, "user must claim own balance");
         require(!claimed[_week][_liquidityProvider], "cannot claim twice");
         require(verifyClaim(_liquidityProvider, _week, _claimedBalance, _merkleProof), "Incorrect merkle proof");
 
@@ -104,6 +105,7 @@ contract MerkleRedeem is IDistributor, Ownable {
         Claim[] memory claims,
         bool useInternalBalance
     ) public {
+        require(msg.sender == _liquidityProvider, "user must claim own balance");
         uint256 totalBalance = 0;
         Claim memory claim;
         for (uint256 i = 0; i < claims.length; i++) {
