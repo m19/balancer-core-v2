@@ -31,14 +31,14 @@ describe('MerkleRedeem', () => {
   let admin: SignerWithAddress,
     lp1: SignerWithAddress,
     lp2: SignerWithAddress,
-    lp3: SignerWithAddress,
+    other: SignerWithAddress,
     mockAssetManager: SignerWithAddress;
   let poolId: string;
   const rewardTokenInitialBalance = bn(100e18);
   const tokenInitialBalance = bn(200e18);
 
   before('deploy base contracts', async () => {
-    [admin, lp1, lp2, lp3, mockAssetManager] = await ethers.getSigners();
+    [admin, lp1, lp2, other, mockAssetManager] = await ethers.getSigners();
   });
 
   beforeEach('set up tokens and redeem contract', async () => {
@@ -69,7 +69,7 @@ describe('MerkleRedeem', () => {
     const assetManagers = [mockAssetManager.address, mockAssetManager.address];
     await pool.registerTokens(assets, assetManagers);
 
-    await vault.connect(lp1).joinPool(poolId, lp1.address, lp2.address, {
+    await vault.connect(lp1).joinPool(poolId, lp1.address, lp1.address, {
       assets,
       maxAmountsIn: assets.map(() => MAX_UINT256),
       fromInternalBalance: false,
@@ -138,7 +138,7 @@ describe('MerkleRedeem', () => {
     let merkleTree: MerkleTree;
 
     beforeEach(async () => {
-      elements = [encodeElement(lp2.address, claimBalance)];
+      elements = [encodeElement(lp1.address, claimBalance)];
       merkleTree = new MerkleTree(elements);
       const root = merkleTree.getHexRoot();
 
@@ -148,12 +148,12 @@ describe('MerkleRedeem', () => {
     it('Allows the user to claimWeek', async () => {
       const claimedBalance = bn('1000');
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
-      await merkleRedeem.connect(lp2).claimWeek(lp2.address, 1, claimedBalance, merkleProof, false);
+      await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false);
 
-      const result = await rewardToken.balanceOf(lp2.address);
+      const result = await rewardToken.balanceOf(lp1.address);
       expect(result).to.equal(claimedBalance); //"user should have an allocation";
 
-      const isClaimed = await merkleRedeem.claimed(1, lp2.address);
+      const isClaimed = await merkleRedeem.claimed(1, lp1.address);
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
     });
 
@@ -162,13 +162,13 @@ describe('MerkleRedeem', () => {
       const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
 
       await expectBalanceChange(
-        () => merkleRedeem.connect(lp2).claimWeek(lp2.address, 1, claimedBalance, merkleProof, true),
+        () => merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, true),
         rewardTokens,
-        [{ account: lp2, changes: { DAI: claimedBalance } }],
+        [{ account: lp1, changes: { DAI: claimedBalance } }],
         vault
       );
 
-      const isClaimed = await merkleRedeem.claimed(1, lp2.address);
+      const isClaimed = await merkleRedeem.claimed(1, lp1.address);
       expect(isClaimed).to.equal(true); // "claim should be marked as claimed";
     });
 
@@ -178,7 +178,7 @@ describe('MerkleRedeem', () => {
 
       const errorMsg = 'Incorrect merkle proof';
       expect(
-        merkleRedeem.connect(lp3).claimWeek(lp3.address, 1, claimedBalance, merkleProof, false)
+        merkleRedeem.connect(other).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false)
       ).to.be.revertedWith(errorMsg);
     });
 
@@ -187,7 +187,7 @@ describe('MerkleRedeem', () => {
       const merkleProof = merkleTree.getHexProof(elements[0]);
       const errorMsg = 'Incorrect merkle proof';
       expect(
-        merkleRedeem.connect(lp2).claimWeek(lp2.address, 1, claimedBalance, merkleProof, false)
+        merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false)
       ).to.be.revertedWith(errorMsg);
     });
 
@@ -195,11 +195,11 @@ describe('MerkleRedeem', () => {
       const claimedBalance = bn('1000');
       const merkleProof = merkleTree.getHexProof(elements[0]);
 
-      await merkleRedeem.connect(lp2).claimWeek(lp2.address, 1, claimedBalance, merkleProof, false);
+      await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false);
 
       const errorMsg = 'cannot claim twice';
       expect(
-        merkleRedeem.connect(lp2).claimWeek(lp2.address, 1, claimedBalance, merkleProof, false)
+        merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false)
       ).to.be.revertedWith(errorMsg);
     });
   });
@@ -217,11 +217,11 @@ describe('MerkleRedeem', () => {
     let root2: string;
 
     beforeEach(async () => {
-      elements1 = [encodeElement(lp2.address, claimBalance1)];
+      elements1 = [encodeElement(lp1.address, claimBalance1)];
       merkleTree1 = new MerkleTree(elements1);
       root1 = merkleTree1.getHexRoot();
 
-      elements2 = [encodeElement(lp2.address, claimBalance2)];
+      elements2 = [encodeElement(lp1.address, claimBalance2)];
       merkleTree2 = new MerkleTree(elements2);
       root2 = merkleTree2.getHexRoot();
 
@@ -242,25 +242,25 @@ describe('MerkleRedeem', () => {
         { week: bn(2), balance: claimedBalance2, merkleProof: proof2 },
       ];
 
-      await merkleRedeem.connect(lp2).claimWeeks(lp2.address, merkleProofs, false);
+      await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
 
-      const result = await rewardToken.balanceOf(lp2.address);
+      const result = await rewardToken.balanceOf(lp1.address);
       expect(result).to.equal(bn('2234')); //"user should receive all tokens, including current week"
     });
 
     it('Returns an array of week claims', async () => {
       let expectedResult = [false, false];
-      let result = await merkleRedeem.claimStatus(lp2.address, 1, 2);
+      let result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
       expect(result).to.eql(expectedResult); // "claim status should be accurate"
       const claimedBalance1 = bn('1000');
       const proof1 = merkleTree1.getHexProof(elements1[0]);
 
       const merkleProofs = [{ week: bn(1), balance: claimedBalance1, merkleProof: proof1 }];
 
-      await merkleRedeem.connect(lp2).claimWeeks(lp2.address, merkleProofs, false);
+      await merkleRedeem.connect(lp1).claimWeeks(lp1.address, merkleProofs, false);
 
       expectedResult = [true, false];
-      result = await merkleRedeem.claimStatus(lp2.address, 1, 2);
+      result = await merkleRedeem.claimStatus(lp1.address, 1, 2);
       expect(result).to.eql(expectedResult); // "claim status should be accurate"
     });
 
