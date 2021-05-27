@@ -50,7 +50,7 @@ contract MerkleRedeem is IDistributor, Ownable {
                 kind: IVault.UserBalanceOpKind.DEPOSIT_INTERNAL
             });
 
-            emit RewardPaid(_recipient, address(rewardToken),_balance);
+            emit RewardPaid(_recipient, address(rewardToken), _balance);
             vault.manageUserBalance(ops);
         }
     }
@@ -145,12 +145,16 @@ contract MerkleRedeem is IDistributor, Ownable {
     }
 
     /**
-      * @notice
-      * Allows the owner to add funds to the contract as a merkle tree, These tokens will
-      * be withdrawn from the sender
-      * These will be pulled from the user
-      */
-    function seedAllocations(uint256 _week, bytes32 _merkleRoot, uint256 amount) external onlyOwner {
+     * @notice
+     * Allows the owner to add funds to the contract as a merkle tree, These tokens will
+     * be withdrawn from the sender
+     * These will be pulled from the user
+     */
+    function seedAllocations(
+        uint256 _week,
+        bytes32 _merkleRoot,
+        uint256 amount
+    ) external onlyOwner {
         require(weekMerkleRoots[_week] == bytes32(0), "cannot rewrite merkle root");
         rewardToken.safeTransferFrom(msg.sender, address(this), amount);
         weekMerkleRoots[_week] = _merkleRoot;
