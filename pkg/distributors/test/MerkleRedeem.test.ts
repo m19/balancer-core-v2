@@ -8,12 +8,9 @@ import Vault from '@balancer-labs/v2-helpers/src/models/vault/Vault';
 import { expectBalanceChange } from '@balancer-labs/v2-helpers/src/test/tokenBalance';
 import Token from '@balancer-labs/v2-helpers/src/models/tokens/Token';
 import TokenList from '@balancer-labs/v2-helpers/src/models/tokens/TokenList';
-import { GeneralPool } from '@balancer-labs/v2-helpers/src/models/vault/pools';
-import { encodeJoin } from '@balancer-labs/v2-helpers/src/models/pools/mockPool';
 import * as expectEvent from '@balancer-labs/v2-helpers/src/test/expectEvent';
 
 import { bn } from '@balancer-labs/v2-helpers/src/numbers';
-import { MAX_UINT256 } from '@balancer-labs/v2-helpers/src/constants';
 import { MerkleTree } from '../lib/merkleTree';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
@@ -23,26 +20,22 @@ function encodeElement(address: string, balance: BigNumber): string {
 }
 
 describe('MerkleRedeem', () => {
-  let tokens: TokenList, rewardTokens: TokenList, rewardToken: Token, vault: Contract, merkleRedeem: Contract;
+  let rewardTokens: TokenList, rewardToken: Token, vault: Contract, merkleRedeem: Contract;
 
   let admin: SignerWithAddress,
     lp1: SignerWithAddress,
     lp2: SignerWithAddress,
-    other: SignerWithAddress,
-    mockAssetManager: SignerWithAddress;
-  let poolId: string;
+    other: SignerWithAddress;
   const rewardTokenInitialBalance = bn(100e18);
   const tokenInitialBalance = bn(200e18);
 
   before('setup', async () => {
-    [, admin, lp1, lp2, other, mockAssetManager] = await ethers.getSigners();
+    [, admin, lp1, lp2, other] = await ethers.getSigners();
   });
 
   sharedBeforeEach('deploy vault and tokens', async () => {
     const vaultHelper = await Vault.create({ admin });
     vault = vaultHelper.instance;
-
-    tokens = await TokenList.create(['SNX', 'MKR'], { sorted: true });
 
     rewardTokens = await TokenList.create(['DAI'], { sorted: true });
     rewardToken = rewardTokens.DAI;
@@ -53,28 +46,6 @@ describe('MerkleRedeem', () => {
     });
     await rewardTokens.mint({ to: admin.address, amount: rewardTokenInitialBalance });
     await rewardTokens.approve({ to: merkleRedeem.address, from: [admin] });
-
-    // deploy pool and add liquidity
-    const specialization = GeneralPool;
-    const pool = await deploy('v2-vault/MockPool', { args: [vault.address, specialization], from: admin });
-    poolId = await pool.getPoolId();
-
-    await tokens.mint({ to: lp1, amount: tokenInitialBalance });
-    await tokens.approve({ to: vault.address, from: [lp1] });
-
-    const assets = tokens.addresses;
-    const assetManagers = [mockAssetManager.address, mockAssetManager.address];
-    await pool.registerTokens(assets, assetManagers);
-
-    await vault.connect(lp1).joinPool(poolId, lp1.address, lp1.address, {
-      assets,
-      maxAmountsIn: assets.map(() => MAX_UINT256),
-      fromInternalBalance: false,
-      userData: encodeJoin(
-        assets.map(() => tokenInitialBalance),
-        assets.map(() => 0)
-      ),
-    });
   });
 
   it('stores an allocation', async () => {
