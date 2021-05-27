@@ -46,7 +46,7 @@ contract MerkleRedeem is IDistributor, Ownable {
     function _disburse(address _recipient, uint256 _balance) private {
         if (_balance > 0) {
             emit RewardPaid(_recipient, address(rewardToken), _balance);
-            require(rewardToken.transfer(_recipient, _balance), "ERR_TRANSFER_FAILED");
+            rewardToken.safeTransfer(_recipient, _balance);
         }
     }
 
