@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 
-// edited to remove use of context thats unnecessary since
-// this won't be used with relayers
+// Based on the Ownable library from OpenZeppelin Contracts, altered to reduce runtime gas by dropping
+// support for the GSN.
 
 pragma solidity ^0.7.0;
 
