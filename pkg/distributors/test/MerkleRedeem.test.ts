@@ -9,6 +9,7 @@ import Token from '@balancer-labs/v2-helpers/src/models/tokens/Token';
 import TokenList from '@balancer-labs/v2-helpers/src/models/tokens/TokenList';
 import { GeneralPool } from '@balancer-labs/v2-helpers/src/models/vault/pools';
 import { encodeJoin } from '@balancer-labs/v2-helpers/src/models/pools/mockPool';
+import * as expectEvent from '@balancer-labs/v2-helpers/src/test/expectEvent';
 
 import { bn } from '@balancer-labs/v2-helpers/src/numbers';
 import { MAX_UINT256 } from '@balancer-labs/v2-helpers/src/constants';
@@ -95,22 +96,19 @@ describe('MerkleRedeem', () => {
     expect(result).to.equal(true);
   });
 
-  it("doesn't allow an allocation to be overwritten", async () => {
+  it('Emits RewardAdded when an allocation is stored', async () => {
     const claimBalance = bn('9876');
 
     const elements = [encodeElement(lp1.address, claimBalance)];
     const merkleTree = new MerkleTree(elements);
     const root = merkleTree.getHexRoot();
 
-    await merkleRedeem.seedAllocations(1, root, claimBalance);
+    const receipt = await (await merkleRedeem.connect(admin).seedAllocations(bn(1), root, claimBalance)).wait();
 
-    // construct tree to attempt to override the allocation
-    const elements2 = [encodeElement(lp1.address, claimBalance), encodeElement(lp2.address, claimBalance)];
-    const merkleTree2 = new MerkleTree(elements2);
-    const root2 = merkleTree2.getHexRoot();
-
-    const errorMsg = 'cannot rewrite merkle root';
-    expect(merkleRedeem.seedAllocations(1, root2, claimBalance.mul(2))).to.be.revertedWith(errorMsg);
+    expectEvent.inReceipt(receipt, 'RewardAdded', {
+      token: rewardToken.address,
+      amount: claimBalance,
+    });
   });
 
   it('stores multiple allocations', async () => {
@@ -132,7 +130,7 @@ describe('MerkleRedeem', () => {
     expect(result).to.equal(true); // "account 1 should have an allocation";
   });
 
-  describe('When a user has an allocation to claim', () => {
+  describe('With an allocation', () => {
     const claimBalance = bn('1000');
     let elements: string[];
     let merkleTree: MerkleTree;
@@ -154,6 +152,21 @@ describe('MerkleRedeem', () => {
         rewardTokens,
         [{ account: lp1, changes: { DAI: claimedBalance } }]
       );
+    });
+
+    it('Emits RewardPaid when an allocation is claimed', async () => {
+      const claimedBalance = bn('1000');
+      const merkleProof: BytesLike[] = merkleTree.getHexProof(elements[0]);
+
+      const receipt = await (
+        await merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false)
+      ).wait();
+
+      expectEvent.inReceipt(receipt, 'RewardPaid', {
+        user: lp1.address,
+        rewardToken: rewardToken.address,
+        amount: claimedBalance,
+      });
     });
 
     it('Marks claimed weeks as claimed', async () => {
@@ -210,9 +223,18 @@ describe('MerkleRedeem', () => {
         merkleRedeem.connect(lp1).claimWeek(lp1.address, 1, claimedBalance, merkleProof, false)
       ).to.be.revertedWith(errorMsg);
     });
+
+    it('Reverts when an admin attempts to overwrite an allocationn', async () => {
+      const elements2 = [encodeElement(lp1.address, claimBalance), encodeElement(lp2.address, claimBalance)];
+      const merkleTree2 = new MerkleTree(elements2);
+      const root2 = merkleTree2.getHexRoot();
+
+      const errorMsg = 'cannot rewrite merkle root';
+      expect(merkleRedeem.seedAllocations(1, root2, claimBalance.mul(2))).to.be.revertedWith(errorMsg);
+    });
   });
 
-  describe('When a user has several allocation to claim', () => {
+  describe('With several allocations', () => {
     const claimBalance1 = bn('1000');
     const claimBalance2 = bn('1234');
 

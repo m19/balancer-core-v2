@@ -12,6 +12,7 @@ import { MAX_UINT256 } from '@balancer-labs/v2-helpers/src/constants';
 
 import { deploy } from '@balancer-labs/v2-helpers/src/contract';
 import { expectBalanceChange } from '@balancer-labs/v2-helpers/src/test/tokenBalance';
+import * as expectEvent from '@balancer-labs/v2-helpers/src/test/expectEvent';
 import { encodeJoinWeightedPool } from '@balancer-labs/v2-helpers/src/models/pools/weighted/encoding';
 import { advanceTime } from '@balancer-labs/v2-helpers/src/time';
 
@@ -170,16 +171,22 @@ describe('Staking contract', () => {
     });
 
     it('sends expected amount of reward token to the rewards contract', async () => {
-      const rewardsBefore = await rewardToken.balanceOf(stakingContract.address);
-
       await expectBalanceChange(
         () => stakingContract.connect(mockAssetManager).notifyRewardAmount(rewardToken.address, rewardAmount),
         rewardTokens,
         [{ account: stakingContract, changes: { DAI: rewardAmount } }]
       );
+    });
 
-      const rewardsAfter = await rewardToken.balanceOf(stakingContract.address);
-      expect(rewardsAfter).to.be.eq(rewardsBefore.add(rewardAmount));
+    it('Emits RewardAdded when an allocation is stored', async () => {
+      const receipt = await (
+        await stakingContract.connect(mockAssetManager).notifyRewardAmount(rewardToken.address, rewardAmount)
+      ).wait();
+
+      expectEvent.inReceipt(receipt, 'RewardAdded', {
+        token: rewardToken.address,
+        amount: rewardAmount,
+      });
     });
 
     it('distributes the reward according to the fraction of staked LP tokens', async () => {
@@ -222,6 +229,21 @@ describe('Staking contract', () => {
         [{ account: lp, changes: { DAI: ['very-near', expectedReward] } }],
         vault
       );
+    });
+
+    it('Emits RewardPaid when an allocation is claimed', async () => {
+      await stakingContract.connect(mockAssetManager).notifyRewardAmount(rewardToken.address, rewardAmount);
+      await advanceTime(10);
+
+      const expectedReward = bn('749999999999999923');
+
+      const receipt = await (await stakingContract.connect(lp).getReward()).wait();
+
+      expectEvent.inReceipt(receipt, 'RewardPaid', {
+        user: lp.address,
+        rewardToken: rewardToken.address,
+        amount: expectedReward,
+      });
     });
 
     describe('with a second distribution', () => {
