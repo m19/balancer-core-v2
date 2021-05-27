@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
@@ -13,7 +15,8 @@ import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/IERC20Permit.sol
 import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
 import "@balancer-labs/v2-vault/contracts/interfaces/IAsset.sol";
 
-import "./interfaces/IRewardsContract.sol";
+import "./interfaces/IMultiRewards.sol";
+import "./interfaces/IDistributor.sol";
 
 // solhint-disable not-rely-on-time
 
@@ -22,7 +25,7 @@ import "./interfaces/IRewardsContract.sol";
  * Curve Finance's MultiRewards contract, updated to be compatible with solc 0.7.0
  */
 
-contract MultiRewards is IRewardsContract, ReentrancyGuard, TemporarilyPausable, Ownable {
+contract MultiRewards is IMultiRewards, IDistributor, ReentrancyGuard, TemporarilyPausable, Ownable {
     using FixedPoint for uint256;
     using SafeERC20 for IERC20;
 
@@ -233,7 +236,7 @@ contract MultiRewards is IRewardsContract, ReentrancyGuard, TemporarilyPausable,
 
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
         rewardData[_rewardsToken].periodFinish = block.timestamp.add(rewardData[_rewardsToken].rewardsDuration);
-        emit RewardAdded(reward);
+        emit RewardAdded(_rewardsToken, reward);
     }
 
     /**
@@ -275,10 +278,8 @@ contract MultiRewards is IRewardsContract, ReentrancyGuard, TemporarilyPausable,
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, address indexed rewardsToken, uint256 reward);
     event RewardsDurationUpdated(address token, uint256 newDuration);
     event Recovered(address token, uint256 amount);
 }
