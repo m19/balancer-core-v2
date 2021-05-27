@@ -133,6 +133,7 @@ contract MerkleRedeem is IDistributor, Ownable {
         uint256 _begin,
         uint256 _end
     ) external view returns (bool[] memory) {
+        require(_begin <= _end, "weeks must be specified in ascending order");
         uint256 size = 1 + _end - _begin;
         bool[] memory arr = new bool[](size);
         for (uint256 i = 0; i < size; i++) {
@@ -142,6 +143,7 @@ contract MerkleRedeem is IDistributor, Ownable {
     }
 
     function merkleRoots(uint256 _begin, uint256 _end) external view returns (bytes32[] memory) {
+        require(_begin <= _end, "weeks must be specified in ascending order");
         uint256 size = 1 + _end - _begin;
         bytes32[] memory arr = new bytes32[](size);
         for (uint256 i = 0; i < size; i++) {
