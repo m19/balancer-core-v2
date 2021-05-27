@@ -1,5 +1,5 @@
 {
-  "name": "@balancer-labs/v2-distributor-utils",
+  "name": "@balancer-labs/v2-distributors",
   "version": "0.1.0",
   "description": "Utilities for distributing tokens from internal balance",
   "license": "GPL-3.0-only",
