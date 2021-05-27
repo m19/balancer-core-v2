@@ -178,7 +178,7 @@ jobs:
       - name: Compile
         run: yarn build
       - name: Test
-        run: yarn workspaces foreach --verbose --include @balancer-labs/v2-distributors-* run test
+        run: yarn workspace @balancer-labs/v2-distributors test
 
   benchmark:
     runs-on: ubuntu-latest
