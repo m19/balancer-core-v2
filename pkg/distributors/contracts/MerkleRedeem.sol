@@ -52,7 +52,7 @@ contract MerkleRedeem is IDistributor, Ownable {
         }
     }
 
-    function _sweep(address payable _recipient, uint256 _balance) private {
+    function _disburseToInternalBalance(address payable _recipient, uint256 _balance) private {
         if (_balance > 0) {
             IVault.UserBalanceOp[] memory ops = new IVault.UserBalanceOp[](1);
 
@@ -85,7 +85,7 @@ contract MerkleRedeem is IDistributor, Ownable {
 
         claimed[_week][_liquidityProvider] = true;
         if (internalBalance) {
-            _sweep(_liquidityProvider, _claimedBalance);
+            _disburseToInternalBalance(_liquidityProvider, _claimedBalance);
         } else {
             _disburse(_liquidityProvider, _claimedBalance);
         }
@@ -122,7 +122,7 @@ contract MerkleRedeem is IDistributor, Ownable {
         }
 
         if (useInternalBalance) {
-            _sweep(_liquidityProvider, totalBalance);
+            _disburseToInternalBalance(_liquidityProvider, totalBalance);
         } else {
             _disburse(_liquidityProvider, totalBalance);
         }
