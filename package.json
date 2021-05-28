@@ -1,6 +1,7 @@
 {
   "name": "@balancer-labs/v2-monorepo",
   "private": true,
+  "version": "1.0.0",
   "description": "Balancer v2 Monorepo",
   "license": "GPL-3.0-only",
   "homepage": "https://github.com/balancer-labs/balancer-core-v2#readme",
